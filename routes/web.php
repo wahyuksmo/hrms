@@ -107,6 +107,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/master-data/psychotest-questions', [MasterDataController::class, 'storePsychotestQuestion'])->name('master.psychotest-questions.store');
 
     // Employees & Superiors
+    Route::get('/employees/org-chart', [EmployeeController::class, 'orgChart'])->name('employees.org-chart');
     Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
     Route::post('/employees', [EmployeeController::class, 'store'])->name('employees.store');
     Route::put('/employees/{employee}', [EmployeeController::class, 'update'])->name('employees.update');

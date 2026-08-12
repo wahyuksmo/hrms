@@ -4,8 +4,8 @@ import { Lock, Mail, ShieldCheck, ArrowRight, Zap } from 'lucide-react';
 
 export default function Login() {
   const { data, setData, post, processing, errors } = useForm({
-    email: 'mamang@gmail.com',
-    password: 'Password123!',
+    email: 'hr@nusantaradigital.id',
+    password: 'password',
     remember: true,
   });
 

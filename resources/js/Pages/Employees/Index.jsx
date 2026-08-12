@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import DataTable from '@/Components/DataTable';
-import Modal from '@/Components/Modal';
+import ServerDataTable from '@/Components/ServerDataTable';
+import Drawer from '@/Components/Drawer';
 import Select2 from '@/Components/Select2';
-import { useForm, router, Head } from '@inertiajs/react';
+import { useForm, router, Head, Link } from '@inertiajs/react';
 import { 
   Users, UserPlus, UserCog, Clock, Pencil, Trash2, Power, 
   Sparkles, CreditCard, Briefcase, User as UserIcon, Shield, CheckCircle2, XCircle, MapPin,
-  GraduationCap, PhoneCall, Heart, FileText, Check, Layers, Plus, Award
+  GraduationCap, PhoneCall, Heart, FileText, Check, Layers, Plus, Award, Network
 } from 'lucide-react';
 import { showConfirm, showSuccess } from '@/Utils/swal';
 import TimeDisplay from '@/Components/TimeDisplay';
 
-export default function EmployeesIndex({ employees, departments, positions, levels, shifts = [], workLocations = [] }) {
+export default function EmployeesIndex({ employees, queryParams = {}, departments, positions, levels, shifts = [], workLocations = [] }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [activeTab, setActiveTab] = useState('personal'); // personal | education | employment | locations | superiors | financial | status
@@ -353,6 +353,7 @@ export default function EmployeesIndex({ employees, departments, positions, leve
 
   const columns = [
     {
+      id: 'name',
       header: 'Karyawan & NIK',
       accessor: (row) => row.full_name,
       render: (row) => (
@@ -504,23 +505,34 @@ export default function EmployeesIndex({ employees, departments, positions, leve
               Kelola data profil lengkap, pendidikan, atasan direct, shift, lokasi presensi, dan status dalam satu tempat dengan mudah dan terintegrasi.
             </p>
           </div>
-          <button
-            onClick={openCreateModal}
-            className="inline-flex items-center space-x-2 px-6 py-3.5 bg-slate-900 hover:bg-brand-600 text-white font-bold text-sm rounded-2xl shadow-[0_8px_20px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_25px_rgba(var(--brand-600-rgb),0.3)] transition-all duration-300 hover:-translate-y-1 active:translate-y-0"
-          >
-            <UserPlus className="w-4.5 h-4.5" />
-            <span>Tambah Karyawan</span>
-          </button>
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <Link
+              href={route('employees.org-chart')}
+              className="inline-flex items-center justify-center space-x-2 px-5 py-3.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-sm rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 active:translate-y-0 w-full sm:w-auto"
+            >
+              <Network className="w-4.5 h-4.5 text-brand-600" />
+              <span>Struktur Organisasi</span>
+            </Link>
+            <button
+              onClick={openCreateModal}
+              className="inline-flex items-center justify-center space-x-2 px-6 py-3.5 bg-slate-900 hover:bg-brand-600 text-white font-bold text-sm rounded-2xl shadow-[0_8px_20px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_25px_rgba(var(--brand-600-rgb),0.3)] transition-all duration-300 hover:-translate-y-1 active:translate-y-0 w-full sm:w-auto"
+            >
+              <UserPlus className="w-4.5 h-4.5" />
+              <span>Tambah Karyawan</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      <DataTable columns={columns} data={employees} searchPlaceholder="Cari nama karyawan, NIK, atau jabatan..." />
+      <ServerDataTable columns={columns} data={employees} searchPlaceholder="Cari nama karyawan atau NIK..." queryParams={queryParams} />
 
-      {/* Unified Edit / Add Employee Modal */}
-      <Modal 
+      {/* Unified Edit / Add Employee Drawer */}
+      <Drawer 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         title={editingEmployee ? `Kelola & Edit Karyawan: ${editingEmployee.full_name} (${editingEmployee.nik})` : "Tambah Karyawan Baru (Auto NIK)"}
+        position="right"
+        width="w-full lg:w-[800px] xl:w-[900px]"
       >
         {/* Modal Tab Headers */}
         <div className="flex p-1.5 bg-slate-100/80 backdrop-blur-sm rounded-2xl mb-6 overflow-x-auto no-scrollbar gap-1.5 border border-slate-200/60 shadow-inner">
@@ -1436,7 +1448,7 @@ export default function EmployeesIndex({ employees, departments, positions, leve
             </button>
           </div>
         </form>
-      </Modal>
+      </Drawer>
     </AuthenticatedLayout>
   );
 }

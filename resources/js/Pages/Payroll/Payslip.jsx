@@ -96,7 +96,7 @@ export default function Payslip({ payroll, terbilang }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
-              {payroll.details && payroll.details.map((d) => (
+              {payroll.details && payroll.details.length > 0 ? payroll.details.map((d) => (
                 <tr key={d.id}>
                   <td className="py-2.5 font-bold">{d.component_name}</td>
                   <td className="py-2.5 uppercase text-[10px] font-extrabold text-slate-400">
@@ -106,7 +106,25 @@ export default function Payslip({ payroll, terbilang }) {
                     {d.component_type === 'earning' ? '+' : '-'} Rp {Number(d.amount).toLocaleString('id-ID')}
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <>
+                  <tr>
+                    <td className="py-2.5 font-bold">Gaji Pokok (Base Salary)</td>
+                    <td className="py-2.5 uppercase text-[10px] font-extrabold text-slate-400">EARNING</td>
+                    <td className="py-2.5 text-right font-mono font-bold text-emerald-700">+ Rp {Number(payroll.base_salary).toLocaleString('id-ID')}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 font-bold">Total Tunjangan (Earnings)</td>
+                    <td className="py-2.5 uppercase text-[10px] font-extrabold text-slate-400">EARNING</td>
+                    <td className="py-2.5 text-right font-mono font-bold text-emerald-700">+ Rp {Number(payroll.total_earnings).toLocaleString('id-ID')}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 font-bold">Total Potongan (Deductions)</td>
+                    <td className="py-2.5 uppercase text-[10px] font-extrabold text-slate-400">DEDUCTION</td>
+                    <td className="py-2.5 text-right font-mono font-bold text-rose-600">- Rp {Number(payroll.total_deductions).toLocaleString('id-ID')}</td>
+                  </tr>
+                </>
+              )}
             </tbody>
           </table>
         </div>

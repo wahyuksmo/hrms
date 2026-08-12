@@ -30,6 +30,10 @@ class EmployeeController extends Controller
         $companyId = session('active_company_id', $request->user()->company_id);
         $currentYear = now()->year;
 
+        $search = $request->input('search');
+        $sort = $request->input('sort');
+        $direction = $request->input('direction', 'asc');
+
         $employees = Employee::with([
             'department', 'position', 'level', 'shift', 'superiors.superior', 'user', 'workLocations',
             'leaveRequests' => function($q) use ($currentYear) {
@@ -37,8 +41,22 @@ class EmployeeController extends Controller
             }
         ])
             ->where('company_id', $companyId)
-            ->orderBy('id', 'desc')
-            ->get();
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('nik', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+                });
+            })
+            ->when($sort, function ($query, $sort) use ($direction) {
+                // Ensure $sort is a direct attribute to prevent SQL injection or sort on relation. 
+                // For a more robust solution, join tables if sorting by relation.
+                $query->orderBy($sort, $direction);
+            }, function ($query) {
+                $query->orderBy('id', 'desc');
+            })
+            ->paginate(10)
+            ->withQueryString();
 
         $leaveTypes = \App\Models\LeaveType::where('company_id', $companyId)
             ->where('quota_days', '>', 0)
@@ -61,6 +79,7 @@ class EmployeeController extends Controller
 
         return inertia('Employees/Index', [
             'employees' => $employees,
+            'queryParams' => $request->only(['search', 'sort', 'direction', 'page']),
             'departments' => Department::where('company_id', $companyId)->get(),
             'positions' => Position::where('company_id', $companyId)->get(),
             'levels' => EmployeeLevel::where('company_id', $companyId)->get(),
@@ -270,5 +289,19 @@ class EmployeeController extends Controller
         $employee->workLocations()->sync($validated['work_location_ids'] ?? []);
 
         return back()->with('success', 'Pemetaan lokasi presensi karyawan (Kantor/Customer) berhasil diperbarui.');
+    }
+
+    public function orgChart(Request $request)
+    {
+        $companyId = session('active_company_id', $request->user()->company_id);
+
+        $employees = Employee::with(['position', 'department', 'superiors.superior'])
+            ->where('company_id', $companyId)
+            ->where('is_active', true)
+            ->get();
+
+        return inertia('Employees/OrgChart', [
+            'employees' => $employees
+        ]);
     }
 }

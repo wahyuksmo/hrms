@@ -365,10 +365,15 @@ export default function KpiIndex({ appraisals, employees, templates, stats }) {
                                                                 <input type="number" min="0" value={entry.actual} onChange={(e) => handleScoreChange(ind.id, 'actual', e.target.value)}
                                                                     className="w-16 px-2 py-1 border border-slate-200 rounded-lg text-xs font-semibold text-center focus:outline-none focus:border-indigo-400" />
                                                             </div>
-                                                            <div className="text-right">
-                                                                <label className="text-[9px] text-slate-400 block mb-0.5">Skor</label>
-                                                                <input type="number" min="0" max="100" value={entry.score} onChange={(e) => handleScoreChange(ind.id, 'score', e.target.value)}
-                                                                    className="w-16 px-2 py-1 border border-indigo-300 rounded-lg text-xs font-black text-center text-indigo-700 focus:outline-none focus:border-indigo-500 bg-indigo-50/50" />
+                                                            <div className="flex flex-col items-end gap-1">
+                                                                <div className="flex items-center gap-2">
+                                                                    <input type="range" min="0" max="100" value={entry.score} onChange={(e) => handleScoreChange(ind.id, 'score', e.target.value)} className="w-24 h-1.5 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                                                                    <div className="text-right relative">
+                                                                        <label className="absolute -top-3 right-0 text-[8px] text-slate-400">Skor</label>
+                                                                        <input type="number" min="0" max="100" value={entry.score} onChange={(e) => handleScoreChange(ind.id, 'score', e.target.value)}
+                                                                            className="w-14 px-1.5 py-1 border border-indigo-300 rounded-lg text-xs font-black text-center text-indigo-700 focus:outline-none focus:border-indigo-500 bg-indigo-50/50" />
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>

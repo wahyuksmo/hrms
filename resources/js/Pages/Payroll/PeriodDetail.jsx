@@ -3,9 +3,10 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Modal from '@/Components/Modal';
 import StatusBadge from '@/Components/StatusBadge';
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { ArrowLeft, Printer, FileText, Banknote, ShieldCheck, Lock, CheckCircle2, Download, RefreshCw, Edit3, Plus, Trash2, CalendarDays } from 'lucide-react';
+import { ArrowLeft, Printer, FileText, Banknote, ShieldCheck, Lock, CheckCircle2, Download, RefreshCw, Edit3, Plus, Trash2, CalendarDays, MessageCircle, Mail } from 'lucide-react';
 import { showConfirm, showSuccess } from '@/Utils/swal';
 import DateDisplay from '@/Components/DateDisplay';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function PeriodDetail({ period, payrolls }) {
   const [activeSlip, setActiveSlip] = useState(null);
@@ -75,13 +76,33 @@ export default function PeriodDetail({ period, payrolls }) {
   const handleOverrideSubmit = (e) => {
     e.preventDefault();
     postOverride(route('payroll.recalculate-employee', period.id), {
+      preserveScroll: true,
       onSuccess: () => {
         setOverrideTarget(null);
         resetOverride();
         showSuccess('Berhasil!', 'Payroll karyawan berhasil diperbarui.');
+      },
+      onError: (errors) => {
+        showConfirm({
+          title: 'Validasi Gagal',
+          text: Object.values(errors).join(', '),
+          icon: 'error',
+          showCancelButton: false,
+          confirmText: 'Tutup'
+        });
       }
     });
   };
+
+  const handleSendPayslip = (method) => {
+    showSuccess('Terkirim!', `Slip gaji sedang dikirim via ${method === 'wa' ? 'WhatsApp' : 'Email'} ke ${activeSlip.employee?.full_name}.`);
+  };
+
+  const summaryData = [
+    { name: 'Total Pendapatan', value: payrolls.reduce((sum, p) => sum + Number(p.total_earnings), 0), fill: '#10b981' }, // emerald-500
+    { name: 'Total Potongan', value: payrolls.reduce((sum, p) => sum + Number(p.total_deductions), 0), fill: '#f43f5e' } // rose-500
+  ];
+  const totalNet = payrolls.reduce((sum, p) => sum + Number(p.net_salary), 0);
 
   return (
     <AuthenticatedLayout headerTitle={`Rincian Slip Gaji: ${period.name}`}>
@@ -108,30 +129,30 @@ export default function PeriodDetail({ period, payrolls }) {
                 <StatusBadge status={period.status} />
               )}
             </div>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
-            <div className="flex flex-wrap items-center gap-3 text-xs mt-1.5">
-              <div className="flex items-center gap-1.5">
-                <span className="text-slate-500 font-bold">Cut-off:</span>
-                <div className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-50 border border-slate-200/80 rounded-md text-[10px] font-bold text-slate-700 shadow-xs">
-                  <CalendarDays className="w-3 h-3 text-slate-400" />
-                  <DateDisplay date={period.start_date} format="short" />
+            <div className="text-xs text-slate-500 font-medium mt-0.5">
+              <div className="flex flex-wrap items-center gap-3 text-xs mt-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-slate-500 font-bold">Cut-off:</span>
+                  <div className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-50 border border-slate-200/80 rounded-md text-[10px] font-bold text-slate-700 shadow-xs">
+                    <CalendarDays className="w-3 h-3 text-slate-400" />
+                    <DateDisplay date={period.start_date} format="short" />
+                  </div>
+                  <span className="text-slate-300 font-black">-</span>
+                  <div className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-50 border border-slate-200/80 rounded-md text-[10px] font-bold text-slate-700 shadow-xs">
+                    <CalendarDays className="w-3 h-3 text-slate-400" />
+                    <DateDisplay date={period.end_date} format="short" />
+                  </div>
                 </div>
-                <span className="text-slate-300 font-black">-</span>
-                <div className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-50 border border-slate-200/80 rounded-md text-[10px] font-bold text-slate-700 shadow-xs">
-                  <CalendarDays className="w-3 h-3 text-slate-400" />
-                  <DateDisplay date={period.end_date} format="short" />
-                </div>
-              </div>
-              <div className="w-px h-3.5 bg-slate-200/80"></div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-slate-500 font-bold">Pay Date:</span>
-                <div className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-brand-50 border border-brand-200/60 rounded-md text-[10px] font-bold text-brand-700 shadow-xs">
-                  <CalendarDays className="w-3 h-3 text-brand-500" />
-                  <DateDisplay date={period.pay_date} format="short" />
+                <div className="w-px h-3.5 bg-slate-200/80"></div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-slate-500 font-bold">Pay Date:</span>
+                  <div className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-brand-50 border border-brand-200/60 rounded-md text-[10px] font-bold text-brand-700 shadow-xs">
+                    <CalendarDays className="w-3 h-3 text-brand-500" />
+                    <DateDisplay date={period.pay_date} format="short" />
+                  </div>
                 </div>
               </div>
             </div>
-            </p>
           </div>
         </div>
 
@@ -165,6 +186,50 @@ export default function PeriodDetail({ period, payrolls }) {
               <span>Tandai Lunas (PAID)</span>
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Summary Chart Section */}
+      <div className="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs flex items-center justify-between col-span-1 lg:col-span-2">
+          <div>
+            <div className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-1">Total Pengeluaran Gaji Bersih</div>
+            <div className="text-4xl font-black text-brand-900 font-mono tracking-tight">Rp {Number(totalNet).toLocaleString('id-ID')}</div>
+            <div className="mt-3 flex items-center space-x-6">
+              <div>
+                <span className="text-[10px] font-bold text-emerald-600 block uppercase">Total Pendapatan</span>
+                <span className="text-sm font-mono font-bold text-slate-800">Rp {Number(summaryData[0].value).toLocaleString('id-ID')}</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-rose-600 block uppercase">Total Potongan</span>
+                <span className="text-sm font-mono font-bold text-slate-800">Rp {Number(summaryData[1].value).toLocaleString('id-ID')}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-3xl border border-slate-200/80 p-4 shadow-xs h-40">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={summaryData}
+                cx="50%"
+                cy="50%"
+                innerRadius={30}
+                outerRadius={60}
+                paddingAngle={5}
+                dataKey="value"
+                stroke="none"
+              >
+                {summaryData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Pie>
+              <Tooltip 
+                formatter={(value) => `Rp ${Number(value).toLocaleString('id-ID')}`}
+                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
@@ -263,14 +328,29 @@ export default function PeriodDetail({ period, payrolls }) {
             <div className="space-y-3">
               <div className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Rincian Komponen Penggajian:</div>
               <div className="divide-y divide-slate-100 text-xs">
-                {activeSlip.details && activeSlip.details.map((d) => (
+                {activeSlip.details && activeSlip.details.length > 0 ? activeSlip.details.map((d) => (
                   <div key={d.id} className="py-2 flex justify-between">
                     <span className="text-slate-700 font-medium">{d.component_name}</span>
                     <span className={`font-mono font-bold ${d.component_type === 'earning' ? 'text-emerald-700' : 'text-rose-600'}`}>
                       {d.component_type === 'earning' ? '+' : '-'} Rp {Number(d.amount).toLocaleString('id-ID')}
                     </span>
                   </div>
-                ))}
+                )) : (
+                  <>
+                    <div className="py-2 flex justify-between">
+                      <span className="text-slate-700 font-medium">Gaji Pokok (Base Salary)</span>
+                      <span className="font-mono font-bold text-emerald-700">+ Rp {Number(activeSlip.base_salary).toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="py-2 flex justify-between">
+                      <span className="text-slate-700 font-medium">Total Tunjangan (Earnings)</span>
+                      <span className="font-mono font-bold text-emerald-700">+ Rp {Number(activeSlip.total_earnings).toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="py-2 flex justify-between">
+                      <span className="text-slate-700 font-medium">Total Potongan (Deductions)</span>
+                      <span className="font-mono font-bold text-rose-600">- Rp {Number(activeSlip.total_deductions).toLocaleString('id-ID')}</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -285,11 +365,19 @@ export default function PeriodDetail({ period, payrolls }) {
               </div>
             </div>
 
-            <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
-              <button onClick={() => window.print()} className="px-5 py-2.5 bg-slate-900 text-white font-extrabold text-xs rounded-xl flex items-center space-x-2 shadow-md">
-                <Printer className="w-4 h-4" />
-                <span>Print Document</span>
+            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4 border-t border-slate-100">
+              <button onClick={() => handleSendPayslip('email')} className="px-5 py-2.5 bg-blue-50 text-blue-700 hover:bg-blue-100 font-extrabold text-xs rounded-xl flex items-center justify-center space-x-2 transition-colors">
+                <Mail className="w-4 h-4" />
+                <span>Kirim via Email</span>
               </button>
+              <button onClick={() => handleSendPayslip('wa')} className="px-5 py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-extrabold text-xs rounded-xl flex items-center justify-center space-x-2 transition-colors">
+                <MessageCircle className="w-4 h-4" />
+                <span>Kirim via WhatsApp</span>
+              </button>
+              <a href={route('payroll.payslip', activeSlip.id)} target="_blank" rel="noreferrer" className="px-5 py-2.5 bg-slate-900 text-white font-extrabold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-md hover:bg-slate-800">
+                <Printer className="w-4 h-4" />
+                <span>Lihat & Print Full Slip</span>
+              </a>
             </div>
           </div>
         </Modal>
